@@ -1,0 +1,48 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>e2e可视化测试的一些学习 | 关于jojoLockLock的大脑回路</title><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/very-simple.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"></head><body><!-- include the sidebar--><!-- include ./includes/sidebar.jade--><!-- Blog title and subtitle--><header><div class="container header"><a id="logo" href="/." class="title">关于jojoLockLock的大脑回路</a><span class="subtitle"></span><label id="toggle-menu" for="menu" onclick><i class="fa fa-bars"></i></label></div></header><!-- use checkbox hack for toggle nav-bar on small screens--><input id="menu" type="checkbox"><!-- Navigation Links--><nav id="nav"><div class="container"><a href="/" class="sidebar-nav-item active">Home</a><a href="/archives" class="sidebar-nav-item">Archives</a></div></nav><div id="header-margin-bar"></div><!-- gallery that comes before the header--><div class="wrapper"><div class="container post-header"><h1>e2e可视化测试的一些学习</h1></div></div><div class="wrapper"><div class="container meta"><div class="post-time">2018-04-06</div></div></div><article><div class="container post"><blockquote>
+<p>最近在大面积重构公司的一个系统的前端部分（导致重构的原因是开发过程中需求大幅度变动），但是由于重构了最底层的依赖，又没有存在足够的测试case，重构结束后，需要重新人肉进行功能测试，会消耗较多的人力物力，故而引发了我去学习前端测试相关的知识。</p>
+</blockquote>
+<h2 id="目前主要的测试层面"><a href="#目前主要的测试层面" class="headerlink" title="目前主要的测试层面"></a>目前主要的测试层面</h2><p>通过搜索一些资料，发现了目前市面上前端的测试主要分为以下几个层面</p>
+<ul>
+<li>单元测试 Unit testing</li>
+<li>集成测试  Integration testing</li>
+<li>端到端测试 End to end testing</li>
+</ul>
+<p>说说我对这几种测试的理解</p>
+<h3 id="单元测试"><a href="#单元测试" class="headerlink" title="单元测试"></a>单元测试</h3><p>个人理解主要是一些无副作用的单元，没有 I/O 和 UI 的依赖。</p>
+<p>例如：之前我为了解决后端返回的数据结构与原接口设计不一致导致的异常，写了一个数据格式预处理函数，可提供一个数据模型配置，将后端返回的数据中异常的结构替换为安全的值，来保障前端正常的运行。这个预处理函数的特点就是无副作用，这时候，如果对这个函数提供了一定的单元测试，就可以愉快的进行函数重构和功能迭代升级。</p>
+<h3 id="集成测试"><a href="#集成测试" class="headerlink" title="集成测试"></a>集成测试</h3><p>这个似乎是一个争议比较大的概念，个人理解是将多个单元进行组合测试，没有过多的探索，暂不讨论</p>
+<h3 id="端到端测试"><a href="#端到端测试" class="headerlink" title="端到端测试"></a>端到端测试</h3><p>在经历过单元测试和集成测试后，所有模块最终需要组合成一个系统，为用户提供功能。</p>
+<p>这时，端到端测试就登场了，例如：检测一个搜索功能是否能够正常使用，利用 selenium 等技术编写脚本去驱动浏览器自动进行输入操作，校验DOM的渲染内容是否和预期一致，可进行屏幕快照等操作。</p>
+<p>这类测试由于有大量的I/O、网络请求相关的东西，所以测试案例中存在不稳定的情况，另外就是DOM节点的渲染内容是否正确，和最终用户视觉上呈现的内容，是有差异的,可能某个按钮被其他内容挤到了边界外，视觉上被隐藏了起来，但实际上DOM节点是存在的。</p>
+<h2 id="可视化测试的思路"><a href="#可视化测试的思路" class="headerlink" title="可视化测试的思路"></a>可视化测试的思路</h2><p>可视化测试也是e2e测试的主要形式之一，通过对比屏幕快照的像素是否与UI设计图一致来判断测试是否通过，当然肯定存在偏差的问题，目前了解发现主要的几个难点问题如下：</p>
+<ul>
+<li>不同浏览器渲染不同的结果不同</li>
+<li>数据是流动的，渲染的结果不可能与UI设计图一致</li>
+</ul>
+<p>在说明如何解决上面的问题之前，有一点需要明白的是，我们在做可视化测试的时候，是为了解决什么问题。在我的角度看来，可视化测试是为了保证<strong>交互与预期一致</strong>，那什么是交互？是用户通过一系列操作事件 例如<strong>鼠标点击，键盘输入</strong>，导致<strong>视图产生相应的反馈</strong>。</p>
+<p>由此看来可视化测试的关键点就在于 <strong>动作 -&gt; 视图</strong></p>
+<p>那么这个可视化测试的流程大概如下：</p>
+<ol>
+<li>通过selenium编写相应的脚本操作浏览器，对动作的结果进行快照保存</li>
+<li>测试人员对初次快照的结果进行确认，并将其保存为基准图</li>
+<li>当产品进行迭代时，再次运行测试case，使用图像diff对比基准图，并将diff的标记出来</li>
+<li>测试人员对与基准不一致的结果进行人工查验，若功能为预期的改动则通过，并将结果保存为新的基准图，否则测试不通过</li>
+</ol>
+<p>那么对于<strong>不同浏览器渲染不同的结果不同</strong>这个问题，宽松的我们可以为不同浏览器设定不同的基准，严格的也可以统一一个标准。</p>
+<p><strong>数据是流动的，渲染的结果不可能与UI设计图一致</strong>，目前也有好的解决方案，通过<a href="https://github.com/webdriverio/webdrivercss" target="_blank" rel="noopener">webdrivercss</a>等技术对流动数据的DOM进行屏蔽，或者通过mock后端返回的数据来保证每次数据的一致。</p>
+<h2 id="关于上述方案测试的成本"><a href="#关于上述方案测试的成本" class="headerlink" title="关于上述方案测试的成本"></a>关于上述方案测试的成本</h2><p>成本主要在于两个点</p>
+<ul>
+<li>测试人员编写的case</li>
+<li>支持多版本的不同浏览器</li>
+</ul>
+<p>人工的成本我认为可以通过控制测试的量，来降低成本，毕竟业务上的变化是极其快的，编写大量的可视化测试，可能会浪费大量的人力。但是也正是因为快，更需要测试，这样的测试方案，实际上可以运用在对旧的功能进行验证，保证新功能的添加，对旧的功能不会产生影响。</p>
+<p>支持多版本的浏览器，就需要多台机器的支持，目前市面上已经有提供这样服务的商家，例:browserStack等，但是由于带宽和费用原因，可能部分公司会重新考虑这个问题，当然也可以尝试自己内网搭建一个这样的服务，这里也不再展开，有兴趣的可以自己搜索相关资料。</p>
+<p>本文主要分享这次学习中的收获和产生的一些的想法，希望接下去的工作中会有机会对方案进行实践。</p>
+<p>以上。</p>
+<blockquote>
+<p>第一次写博客，希望不会误导各位，欢迎指正文中的不足点</p>
+</blockquote>
+</div><!-- comment system--><div class="container"><hr></div></article><footer id="footer"><div class="container"><div class="bar"><div class="social"><a href="/atom.xml" target="_blank"><i class="fa fa-rss"></i></a></div><div class="footer">© 2018 <a href="/" rel="nofollow">jojoLockLock</a>. Powered by <a rel="nofollow" target="_blank" href="https://hexo.io">Hexo</a>. Theme <a target="_blank" href="https://github.com/lotabout/very-simple">very-simple</a>.</div></div></div></footer><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+    $(".fancybox").fancybox();
+});
+</script></body></html>
